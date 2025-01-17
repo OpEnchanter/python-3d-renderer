@@ -1,7 +1,7 @@
 import pygame, math, sys
 import numpy as np
 
-
+pygame.init()
 display_scale = (640, 480)
 display_center = (display_scale[0] / 2, display_scale[1] / 2)
 window = pygame.display.set_mode(display_scale)
@@ -15,38 +15,32 @@ def magnitude(vec):
     return math.sqrt(vec[0] ** 2 + vec[1] ** 2)
 
 def dist3D(p1, p2):
-    return math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2 + (p2[2] - p1[2]) ** 2)
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
 
 def renderMesh(mesh):
     screenSpaceMesh = []
-    lowestDist = float('inf')
     for tri in mesh:
-        triMesh = [None, None, None, tri[3]]
+        triMesh = [None, None, None, tri[3], None, None]
         ptIdx = 0
-        vertices = []
-        for x in range(3):
-            vertices.append(tri[x])
+        vertices = tri[:3]
 
-        for point in vertices:
+        for point in tri[:3]:
             screenSpacePosition = (point[0], point[1])
             screenSpaceVector = calculateVector(point, display_center)
             screenSpaceVector = (screenSpaceVector[0] / magnitude(screenSpaceVector), screenSpaceVector[1] / magnitude(screenSpaceVector))
             screenSpacePosition = (screenSpacePosition[0] + screenSpaceVector[0] * point[2] / 4, screenSpacePosition[1] + screenSpaceVector[1] * point[2] / 4)
             
-
-            pygame.draw.circle(window, (255, 0, 0), screenSpacePosition, 2)
             triMesh[ptIdx] = screenSpacePosition
             ptIdx += 1
 
-        center = (sum(p[0] for p in triMesh) / 3, sum(p[1] for p in triMesh) / 3, sum(p[2] for p in tri) / 3)
+        center = (sum(p[0] for p in tri[:3]) / 3, sum(p[1] for p in tri[:3]) / 3, sum(p[2] for p in tri[:3]) / 3)
         depth = dist3D(center, (display_center[0], display_center[1], 0))
 
-        if depth < lowestDist:
-            screenSpaceMesh.append(triMesh)
-            lowestDist = depth
-        else:
-            print("Inserting")
-            screenSpaceMesh.insert(0, triMesh)
+        triMesh[4] = depth
+
+        screenSpaceMesh.append(triMesh)
+
+    screenSpaceMesh = sorted(screenSpaceMesh, key=lambda x: x[4], reverse=True)
 
     for tri in screenSpaceMesh:
         vertices = []
@@ -54,6 +48,8 @@ def renderMesh(mesh):
             vertices.append(tri[x])
 
         pygame.draw.polygon(window, tri[3], vertices)
+
+    pygame.draw.circle(window, (255, 255, 255), (display_center[0], display_center[1]), 5)
 
 def rotatePoint(point, origin, rotation):
 
@@ -89,6 +85,9 @@ def rotatePoint(point, origin, rotation):
 
 object_rotation = (0, 0, 0)
 
+font = pygame.font.Font(None, 25)
+clock = pygame.time.Clock()
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -99,63 +98,99 @@ while True:
 
     mesh = [
         (
-            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 0, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 0, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 0, object_rotation[2])),
             (0, 0, 255)
         ),
         (
-            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, object_rotation),
-            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, object_rotation),
-            (0, 0, 255)
-        ),
-
-        (
-            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] - 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
-            (0, 0, 255)
-        ),
-        (
-            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] - 100, display_center[1] + 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 0, object_rotation[2])),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 0, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 0, object_rotation[2])),
             (0, 0, 255)
         ),
 
 
         (
-            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, object_rotation),
-            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 180, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 180, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 180, object_rotation[2])),
+            (0, 0, 255)
+        ),
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 180, object_rotation[2])),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 180, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 180, object_rotation[2])),
+            (0, 0, 255)
+        ),
+
+
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 90, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 90, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 90, object_rotation[2])),
             (255, 0, 0)
         ),
         (
-            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] - 100, display_center[1] + 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 90, object_rotation[2])),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 90, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 90, object_rotation[2])),
             (255, 0, 0)
         ),
 
         (
-            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 270, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 270, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 270, object_rotation[2])),
             (255, 0, 0)
         ),
         (
-            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] - 100, 200), object_origin, object_rotation),
-            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 270, object_rotation[2])),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 270, object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0], object_rotation[1] + 270, object_rotation[2])),
             (255, 0, 0)
         ),
-        
 
-        
+
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0] + 90, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, (object_rotation[0] + 90, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0] + 90, object_rotation[1], object_rotation[2])),
+            (0, 255, 0)
+        ),
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0] + 90, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, (object_rotation[0] + 90, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0] + 90, object_rotation[1], object_rotation[2])),
+            (0, 255, 0)
+        ),
+
+
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0] + 270, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, (object_rotation[0] + 270, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0] + 270, object_rotation[1], object_rotation[2])),
+            (0, 255, 0)
+        ),
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, (object_rotation[0] + 270, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, (object_rotation[0] + 270, object_rotation[1], object_rotation[2])),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, (object_rotation[0] + 270, object_rotation[1], object_rotation[2])),
+            (0, 255, 0)
+        ),
     ]
 
-    object_rotation = (object_rotation[0], object_rotation[1] + 0.07, object_rotation[2])
+    mx, my = pygame.mouse.get_pos()
+
+    if pygame.key.get_pressed()[pygame.K_d]:
+        object_rotation = (object_rotation[0], object_rotation[1] + 0.05, object_rotation[2])
+    if pygame.key.get_pressed()[pygame.K_a]:
+        object_rotation = (object_rotation[0], object_rotation[1] - 0.05, object_rotation[2])
+
+    if pygame.key.get_pressed()[pygame.K_w]:
+        object_rotation = (object_rotation[0] + 0.05, object_rotation[1], object_rotation[2])
+    if pygame.key.get_pressed()[pygame.K_s]:
+        object_rotation = (object_rotation[0] - 0.05, object_rotation[1], object_rotation[2])
 
     
 
@@ -163,5 +198,11 @@ while True:
 
     renderMesh(mesh)
 
+    fpsText = font.render(str(int(clock.get_fps())), True, (255, 255, 255))
+
+    window.blit(fpsText, (0,0))
+
     pygame.display.flip()
     depth_buffer.fill(float('inf'))
+
+    clock.tick()
