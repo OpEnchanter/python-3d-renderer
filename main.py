@@ -1,9 +1,12 @@
 import pygame, math, sys
+import numpy as np
 
 
 display_scale = (640, 480)
 display_center = (display_scale[0] / 2, display_scale[1] / 2)
 window = pygame.display.set_mode(display_scale)
+
+depth_buffer = np.full(display_scale, float('inf'))
 
 def calculateVector(p1, p2) -> tuple:
     return (p2[0] - p1[0], p2[1] - p1[1])
@@ -11,8 +14,12 @@ def calculateVector(p1, p2) -> tuple:
 def magnitude(vec):
     return math.sqrt(vec[0] ** 2 + vec[1] ** 2)
 
+def dist3D(p1, p2):
+    return math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2 + (p2[2] - p1[2]) ** 2)
+
 def renderMesh(mesh):
     screenSpaceMesh = []
+    lowestDist = float('inf')
     for tri in mesh:
         triMesh = [None, None, None, tri[3]]
         ptIdx = 0
@@ -30,7 +37,16 @@ def renderMesh(mesh):
             pygame.draw.circle(window, (255, 0, 0), screenSpacePosition, 2)
             triMesh[ptIdx] = screenSpacePosition
             ptIdx += 1
-        screenSpaceMesh.append(triMesh)
+
+        center = (sum(p[0] for p in triMesh) / 3, sum(p[1] for p in triMesh) / 3, sum(p[2] for p in tri) / 3)
+        depth = dist3D(center, (display_center[0], display_center[1], 0))
+
+        if depth < lowestDist:
+            screenSpaceMesh.append(triMesh)
+            lowestDist = depth
+        else:
+            print("Inserting")
+            screenSpaceMesh.insert(0, triMesh)
 
     for tri in screenSpaceMesh:
         vertices = []
@@ -95,12 +111,51 @@ while True:
             (0, 0, 255)
         ),
 
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
+            (0, 0, 255)
+        ),
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
+            (0, 0, 255)
+        ),
+
+
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 1), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, object_rotation),
+            (255, 0, 0)
+        ),
+        (
+            rotatePoint((display_center[0] - 100, display_center[1] - 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] - 100, display_center[1] + 100, 1), object_origin, object_rotation),
+            (255, 0, 0)
+        ),
+
+        (
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 1), object_origin, object_rotation),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, object_rotation),
+            (255, 0, 0)
+        ),
+        (
+            rotatePoint((display_center[0] + 100, display_center[1] + 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 200), object_origin, object_rotation),
+            rotatePoint((display_center[0] + 100, display_center[1] - 100, 1), object_origin, object_rotation),
+            (255, 0, 0)
+        ),
         
 
         
     ]
 
-    object_rotation = (object_rotation[0], object_rotation[1] + 0.01, object_rotation[2])
+    object_rotation = (object_rotation[0], object_rotation[1] + 0.07, object_rotation[2])
 
     
 
@@ -109,3 +164,4 @@ while True:
     renderMesh(mesh)
 
     pygame.display.flip()
+    depth_buffer.fill(float('inf'))
